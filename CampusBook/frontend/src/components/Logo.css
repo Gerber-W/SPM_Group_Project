@@ -1,0 +1,27 @@
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--cb-red);
+}
+
+.logo-mark {
+  width: 28px;
+  height: 28px;
+}
+
+.logo-text {
+  color: var(--cb-text);
+  font-size: 21px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.logo-text strong {
+  font-weight: 800;
+}
+
+.logo-light,
+.logo-light .logo-text {
+  color: #fff;
+}

@@ -1,0 +1,132 @@
+.ah {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--cb-red);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.08), 0 4px 16px rgba(110, 20, 34, 0.18);
+  font-family: var(--cb-font);
+}
+
+.ah-inner {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  max-width: 1040px;
+  height: 64px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.ah-brand {
+  display: flex;
+  text-decoration: none;
+}
+
+.ah-nav {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+}
+
+.ah-link {
+  padding: 8px 14px;
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.82);
+  font-weight: 500;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+
+.ah-link:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.ah-link.is-active {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+.ah-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ah-avatar {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--cb-red);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ah-user-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  color: #fff;
+}
+
+.ah-user-text strong {
+  font-size: 14px;
+}
+
+.ah-user-text span {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.ah-logout {
+  margin: 0 0 0 8px;
+  padding: 7px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 6px;
+  background: transparent;
+  color: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.ah-logout:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.ah-link:focus-visible,
+.ah-logout:focus-visible,
+.ah-brand:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+@media (max-width: 720px) {
+  .ah-inner {
+    flex-wrap: wrap;
+    gap: 0 12px;
+    height: auto;
+    padding: 12px 16px 0;
+  }
+
+  .ah-user {
+    margin-left: auto;
+  }
+
+  .ah-user-text {
+    display: none;
+  }
+
+  .ah-nav {
+    order: 3;
+    flex-basis: 100%;
+    margin: 10px -4px 0;
+    padding-bottom: 8px;
+    overflow-x: auto;
+  }
+}
