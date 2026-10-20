@@ -1,0 +1,228 @@
+.bs-lecturer,
+.bs-day,
+.bs-time,
+.bs-calendar-header button {
+  margin: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.bs-day:disabled,
+.bs-calendar-header button:disabled {
+  cursor: default;
+}
+
+.bs-lecturers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 32px;
+}
+
+.bs-lecturer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 180px;
+  padding: 0;
+  text-align: center;
+  transition: transform 0.15s;
+}
+
+.bs-lecturer:hover {
+  transform: translateY(-2px);
+}
+
+.bs-lecturer .cb-avatar {
+  margin-bottom: 8px;
+}
+
+.bs-lecturer:hover .cb-avatar:not(.is-selected) {
+  box-shadow: 0 0 0 3px var(--cb-line);
+}
+
+.bs-lecturer-name {
+  font-weight: 600;
+}
+
+.bs-lecturer.is-selected .bs-lecturer-name {
+  color: var(--cb-red);
+}
+
+.bs-lecturer-detail {
+  font-size: 13px;
+  color: var(--cb-muted);
+}
+
+.bs-when {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 48px;
+}
+
+.bs-calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.bs-calendar-header button {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 20px;
+  line-height: 30px;
+  color: var(--cb-red);
+}
+
+.bs-calendar-header button:hover:not(:disabled) {
+  background: var(--cb-red-light);
+}
+
+.bs-calendar-header button:disabled {
+  color: var(--cb-input);
+}
+
+.bs-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  justify-items: center;
+  margin-bottom: 12px;
+}
+
+.bs-weekday {
+  padding-bottom: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--cb-muted);
+}
+
+.bs-day {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 50%;
+  color: #a3a8ae;
+}
+
+.bs-day.is-open {
+  background: var(--cb-red-light);
+  color: var(--cb-red);
+  font-weight: 700;
+}
+
+.bs-day.is-open:hover {
+  background: #edd2d7;
+}
+
+.bs-day.is-selected {
+  background: var(--cb-red);
+  color: var(--cb-white);
+}
+
+.bs-day.is-today::after {
+  content: '';
+  position: absolute;
+  bottom: 5px;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  margin-left: -2px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.bs-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  font-size: 13px;
+}
+
+.bs-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bs-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.bs-dot.is-open {
+  background: var(--cb-red-light);
+  box-shadow: inset 0 0 0 1px #e3bcc3;
+}
+
+.bs-dot.is-selected {
+  background: var(--cb-red);
+}
+
+.bs-day-title {
+  margin: 0 0 14px;
+  font-size: 15px;
+}
+
+.bs-time-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.bs-time {
+  padding: 12px;
+  border: 1px solid var(--cb-red);
+  border-radius: var(--cb-radius);
+  background: var(--cb-white);
+  color: var(--cb-red);
+  font-weight: 600;
+  transition: background 0.15s, color 0.15s;
+}
+
+.bs-time:hover {
+  background: var(--cb-red-light);
+}
+
+.bs-time.is-selected {
+  background: var(--cb-red);
+  color: var(--cb-white);
+}
+
+.bs-confirm {
+  display: flex;
+  justify-content: flex-end;
+}
+
+@container (max-width: 760px) {
+  .bs-when {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+
+  .bs-calendar {
+    max-width: 360px;
+  }
+}
+
+@container (max-width: 480px) {
+  .bs-lecturers {
+    gap: 16px;
+  }
+
+  .bs-lecturer {
+    width: calc(50% - 8px);
+  }
+
+  .bs-confirm .cb-btn {
+    width: 100%;
+  }
+}
