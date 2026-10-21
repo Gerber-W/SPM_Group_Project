@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { api } from '../api.js';
+import api from '../api';
+import { errorMessage } from '../utils/errors.js';
 import { Alert, Avatar, Button, ButtonLink, DetailList, Field, Page, Section, StepTitle } from '../components/ui.jsx';
 import './BookSlot.css';
 
@@ -46,13 +47,15 @@ export default function BookSlot() {
   const isCurrentMonth = month.getFullYear() === new Date().getFullYear() && month.getMonth() === new Date().getMonth();
 
   useEffect(() => {
-    api('/slots/lecturers').then(setLecturers).catch(err => setError(err.message));
+    api.get('/api/slots/lecturers')
+      .then(res => setLecturers(res.data))
+      .catch(err => setError(errorMessage(err)));
   }, []);
 
   async function loadSlots(selected) {
-    const list = await api(`/slots?lecturerId=${selected.id}`);
-    setSlots(list);
-    return list;
+    const { data } = await api.get('/api/slots', { params: { lecturerId: selected.id } });
+    setSlots(data);
+    return data;
   }
 
   function chooseLecturer(selected) {
@@ -66,7 +69,7 @@ export default function BookSlot() {
         setDay(firstDay);
         if (firstDay) setMonth(parseDate(firstDay));
       })
-      .catch(err => setError(err.message));
+      .catch(err => setError(errorMessage(err)));
   }
 
   function chooseDay(key) {
@@ -82,10 +85,11 @@ export default function BookSlot() {
     setSaving(true);
     setError('');
     try {
-      setBooking(await api('/bookings', { method: 'POST', body: { slotId: slot.id, reason: reason.trim() } }));
+      const { data } = await api.post('/api/bookings', { slotId: slot.id, reason: reason.trim() });
+      setBooking(data);
       setReason('');
     } catch (err) {
-      setError(err.message);
+      setError(errorMessage(err));
     } finally {
       setSlot(null);
       setSaving(false);
@@ -100,7 +104,7 @@ export default function BookSlot() {
           <DetailList items={bookingDetails(booking.lecturerName, booking)} />
           <div className="cb-actions">
             <Button onClick={() => setBooking(null)}>Book another consultation</Button>
-            <ButtonLink to="/bookings" variant="outline">View my bookings</ButtonLink>
+            <ButtonLink to="/my-bookings" variant="outline">View my bookings</ButtonLink>
           </div>
         </Section>
       </Page>

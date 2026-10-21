@@ -36,6 +36,7 @@ export default function Login() {
 
       localStorage.setItem("token", token);
       localStorage.setItem("role", role);
+      localStorage.setItem("user", JSON.stringify(res.data.user));
       navigate(role === "lecturer" ? "/lecturer/slots" : "/book", { replace: true });
         } catch (err) {
       if (!err.response) {
