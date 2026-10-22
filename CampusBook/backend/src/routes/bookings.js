@@ -13,7 +13,7 @@ const SLOT_TAKEN = 'Sorry, that slot is no longer available';
 const httpError = (status, message) => Object.assign(new Error(message), { status });
 
 const BOOKING_COLUMNS = `
-  b.booking_id AS id, b.status, b.reason, s.slot_id AS slotId, s.slot_date AS date,
+  b.booking_id AS id, b.status, b.reason, s.slot_id AS slotId, DATE_FORMAT(s.slot_date, '%Y-%m-%d') AS date,
   TIME_FORMAT(s.start_time, '%H:%i') AS start, TIME_FORMAT(s.end_time, '%H:%i') AS end, s.location,
   TIMESTAMP(s.slot_date, s.start_time) < NOW() AS isPast`;
 
@@ -62,7 +62,7 @@ const toPublicBooking = (id, slot) => ({
 
 async function lockSlot(conn, slotId) {
   const [[slot]] = await conn.query(
-    `SELECT s.slot_id AS id, s.slot_date AS date, TIME_FORMAT(s.start_time, '%H:%i') AS start,
+    `SELECT s.slot_id AS id, DATE_FORMAT(s.slot_date, '%Y-%m-%d') AS date, TIME_FORMAT(s.start_time, '%H:%i') AS start,
             TIME_FORMAT(s.end_time, '%H:%i') AS end, s.location, s.status,
             TIMESTAMP(s.slot_date, s.start_time) > NOW() AS isFuture,
             u.full_name AS lecturerName, u.email AS lecturerEmail

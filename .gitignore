@@ -1,0 +1,10 @@
+# Environment files and secrets
+.env
+.env.*
+!.env.example
+
+# Node.js dependencies
+node_modules/
+
+# Visual Studio local files
+.vs/
