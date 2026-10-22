@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import Login from "./pages/Login";
 import BookSlot from "./pages/BookSlot";
+import MyBookings from "./pages/MyBookings";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AppLayout from "./components/AppLayout";
 import { Page } from "./components/ui";
@@ -45,7 +46,7 @@ export default function App() {
           path="/my-bookings"
           element={
             <ProtectedRoute role="student">
-              <Placeholder title="My bookings" />
+              <MyBookings />
             </ProtectedRoute>
           }
         />
