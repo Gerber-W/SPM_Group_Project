@@ -1,0 +1,14 @@
+--- /tmp/BookSlot.orig.jsx	2026-10-22 15:00:39.685024575 +0200
++++ src/pages/BookSlot.jsx	2026-10-22 15:00:39.721025590 +0200
+@@ -54,8 +54,9 @@
+ 
+   async function loadSlots(selected) {
+     const { data } = await api.get('/api/slots', { params: { lecturerId: selected.id } });
+-    setSlots(data);
+-    return data;
++    const list = data.map(item => ({ ...item, start: item.startTime, end: item.endTime }));
++    setSlots(list);
++    return list;
+   }
+ 
+   function chooseLecturer(selected) {
