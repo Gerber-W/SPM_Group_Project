@@ -10,7 +10,7 @@ let scheduledTask = null;
 let runInProgress = false;
 
 async function processDueReminders() {
-  // Prevent overlapping runs in this application process.
+  // Avoid overlapping runs in this application process.
   if (runInProgress) return;
 
   runInProgress = true;
@@ -21,7 +21,7 @@ async function processDueReminders() {
   try {
     connection = await pool.getConnection();
 
-    // Prevent another server process from running this job simultaneously.
+    // Avoid simultaneous processing by multiple application instances.
     const [[lock]] = await connection.query(
       'SELECT GET_LOCK(?, 0) AS acquired',
       [REMINDER_JOB_LOCK]
@@ -31,7 +31,8 @@ async function processDueReminders() {
 
     lockAcquired = true;
 
-    // Do not send reminders for cancelled bookings or past appointments.
+    // Do not send reminders for cancelled bookings or appointments
+    // whose start time has already passed.
     await connection.query(`
       UPDATE notifications n
       JOIN bookings b ON b.booking_id = n.booking_id
@@ -45,7 +46,7 @@ async function processDueReminders() {
         )
     `);
 
-    // Find reminders that are due and still have valid bookings.
+    // Find due reminders for valid, upcoming appointments.
     const [reminders] = await connection.query(`
       SELECT
         n.notification_id AS notificationId,
@@ -78,7 +79,8 @@ async function processDueReminders() {
           `${reminder.slotDate} from ${reminder.startTime} ` +
           `to ${reminder.endTime} at ${reminder.location}`;
 
-        await Promise.all([
+        // Attempt to notify both the student and the lecturer.
+        const results = await Promise.all([
           mailer.sendMail(
             reminder.studentEmail,
             'Upcoming consultation reminder',
@@ -93,8 +95,19 @@ async function processDueReminders() {
             `Hi ${reminder.lecturerName},\n\n` +
             `${reminder.studentName} has a consultation booked with you ` +
             `on ${appointment}.\n\nCampusBook`
-          )
+          ),
         ]);
+
+        // A preview or unsuccessful SMTP result is not a sent email.
+        const emailsSent = results.every(
+          result => result?.sent === true
+        );
+
+        if (!emailsSent) {
+          throw new Error(
+            'One or more reminder emails were not accepted by SMTP.'
+          );
+        }
 
         await connection.query(`
           UPDATE notifications
@@ -104,12 +117,12 @@ async function processDueReminders() {
         `, [reminder.notificationId]);
 
         console.log(
-          `Reminder processed for booking ${reminder.bookingId}`
+          `Reminder emails accepted for booking ${reminder.bookingId}.`
         );
       } catch (error) {
         await connection.query(`
           UPDATE notifications
-          SET status = 'failed'
+          SET status = 'failed', sent_at = NULL
           WHERE notification_id = ?
             AND status = 'pending'
         `, [reminder.notificationId]);
@@ -149,18 +162,23 @@ function startReminderJob() {
     '* * * * *',
     () => {
       processDueReminders().catch(error => {
-        console.error('CampusBook reminder job error:', error.message);
+        console.error(
+          'CampusBook reminder job error:',
+          error.message
+        );
       });
     },
     { timezone: 'Africa/Johannesburg' }
   );
 
-  console.log('CampusBook reminder job scheduled to run every minute.');
+  console.log(
+    'CampusBook reminder job scheduled to run every minute.'
+  );
 
   return scheduledTask;
 }
 
 module.exports = {
   startReminderJob,
-  processDueReminders
+  processDueReminders,
 };

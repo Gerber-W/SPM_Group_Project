@@ -15,7 +15,6 @@ const mailFrom =
 
 let transporter = null;
 
-// Configure email delivery only when an SMTP server is provided.
 if (smtpHost) {
   const options = {
     host: smtpHost,
@@ -46,7 +45,7 @@ async function sendMail(to, subject, text) {
     throw new Error('Email message content is required');
   }
 
-  // Development mode: preview emails without sending them.
+  // Preview mode does not count as successful delivery.
   if (!transporter) {
     console.log('\n--- CampusBook Email Preview ---');
     console.log('From:', mailFrom);
@@ -55,16 +54,28 @@ async function sendMail(to, subject, text) {
     console.log('Message:', text);
     console.log('--- End Email Preview ---\n');
 
-    return { preview: true };
+    return {
+      sent: false,
+      preview: true,
+    };
   }
 
-  // Send the email using the configured SMTP server.
-  return transporter.sendMail({
+  const info = await transporter.sendMail({
     from: mailFrom,
     to,
     subject,
     text,
   });
+
+  // Nodemailer may return a result with rejected recipients.
+  const sent = Array.isArray(info.accepted) &&
+    info.accepted.length > 0;
+
+  return {
+    sent,
+    preview: false,
+    messageId: info.messageId,
+  };
 }
 
 module.exports = { sendMail };
