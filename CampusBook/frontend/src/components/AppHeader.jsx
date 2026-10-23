@@ -4,17 +4,18 @@ import { initials } from '../utils/text.js';
 import './AppHeader.css';
 
 const LINKS = {
-  student: [{ to: '/book', label: 'Book a slot' }, { to: '/bookings', label: 'My bookings' }],
-  lecturer: [{ to: '/lecturer', label: 'My slots' }],
+  student: [{ to: '/book', label: 'Book a slot' }, { to: '/my-bookings', label: 'My bookings' }],
+  lecturer: [{ to: '/lecturer/slots', label: 'My slots' }],
 };
 
 export default function AppHeader({ user, onLogout }) {
   const links = LINKS[user.role] || [];
+  const home = links[0]?.to || '/login';
 
   return (
     <header className="ah">
       <div className="ah-inner">
-        <Link to="/" className="ah-brand" aria-label="CampusBook home">
+        <Link to={home} className="ah-brand" aria-label="CampusBook home">
           <Logo light />
         </Link>
 

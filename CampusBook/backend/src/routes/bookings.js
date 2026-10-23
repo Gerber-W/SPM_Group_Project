@@ -22,7 +22,7 @@ const BOOKING_COLUMNS = `
   b.status,
   b.reason,
   s.slot_id AS slotId,
-  s.slot_date AS date,
+  DATE_FORMAT(s.slot_date, '%Y-%m-%d') AS date,
   TIME_FORMAT(s.start_time, '%H:%i') AS start,
   TIME_FORMAT(s.end_time, '%H:%i') AS end,
   s.location,
@@ -47,8 +47,7 @@ async function withTransaction(work) {
   }
 }
 
-// Returns true only when the mailer reports that an email
-// was accepted by the configured SMTP server.
+// Return true only when the mailer confirms SMTP acceptance.
 async function sendEmail(to, subject, text) {
   try {
     const result = await mailer.sendMail(to, subject, text);
@@ -59,8 +58,7 @@ async function sendEmail(to, subject, text) {
   }
 }
 
-// Send messages to both the student and the lecturer.
-// The operation succeeds only when both emails succeed.
+// Send email notifications to both the student and lecturer.
 async function emailBoth(
   user,
   slot,
@@ -76,7 +74,7 @@ async function emailBoth(
   return results.every(Boolean);
 }
 
-// Record the outcome of the booking confirmation emails.
+// Store the result of the booking confirmation emails.
 async function markConfirmationSent(bookingId, emailsSent) {
   const status = emailsSent ? 'sent' : 'failed';
 
@@ -109,7 +107,7 @@ async function lockSlot(conn, slotId) {
   const [[slot]] = await conn.query(
     `SELECT
         s.slot_id AS id,
-        s.slot_date AS date,
+        DATE_FORMAT(s.slot_date, '%Y-%m-%d') AS date,
         TIME_FORMAT(s.start_time, '%H:%i') AS start,
         TIME_FORMAT(s.end_time, '%H:%i') AS end,
         s.location,
@@ -130,11 +128,7 @@ async function lockSlot(conn, slotId) {
 async function bookSlot(conn, slotId, studentId, reason) {
   const slot = await lockSlot(conn, slotId);
 
-  if (
-    !slot ||
-    slot.status !== 'open' ||
-    !slot.isFuture
-  ) {
+  if (!slot || slot.status !== 'open' || !slot.isFuture) {
     throw httpError(409, SLOT_TAKEN);
   }
 
