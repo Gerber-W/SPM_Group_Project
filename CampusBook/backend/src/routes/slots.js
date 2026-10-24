@@ -6,16 +6,15 @@ const { isDate, isTime, isText, isId, validateBody } = require('../middleware/va
 const router = express.Router();
 router.use(requireAuth);
 
-// Every slot is sent to the front end in this shape: { id, date, startTime, endTime, location, status }
+// Every slot is sent to the front end in this shape: { id, date, start, end, location, status }
 // DATE_FORMAT and TIME_FORMAT keep dates as plain text so time zones cannot shift them
 const SLOT_FIELDS = `
   s.slot_id AS id,
   s.lecturer_id AS lecturerId,
   DATE_FORMAT(s.slot_date, '%Y-%m-%d') AS date,
-  TIME_FORMAT(s.start_time, '%H:%i') AS startTime,
-  TIME_FORMAT(s.end_time, '%H:%i') AS endTime,
-  s.location,
-  s.status`;
+  TIME_FORMAT(s.start_time, '%H:%i') AS start,
+  TIME_FORMAT(s.end_time, '%H:%i') AS end,
+  s.location`;
 
 // isDate in validate.js accepts 2026-02-31, so check that the day really exists
 const isRealDate = value =>
@@ -23,8 +22,8 @@ const isRealDate = value =>
 
 const slotRules = validateBody({
   date: [isRealDate, 'Enter a valid date (YYYY-MM-DD)'],
-  startTime: [isTime, 'Enter a valid start time (HH:MM)'],
-  endTime: [isTime, 'Enter a valid end time (HH:MM)'],
+  start: [isTime, 'Enter a valid start time (HH:MM)'],
+  end: [isTime, 'Enter a valid end time (HH:MM)'],
   location: [value => isText(value, 100), 'Enter a location (up to 100 characters)'],
 });
 
@@ -37,22 +36,22 @@ function httpError(status, message) {
 function cleanSlot(body) {
   return {
     date: body.date,
-    startTime: body.startTime,
-    endTime: body.endTime,
+    start: body.start,
+    end: body.end,
     location: body.location.trim(),
   };
 }
 
 async function getSlot(db, id) {
-  const [[slot]] = await db.query(`SELECT ${SLOT_FIELDS} FROM consultation_slots s WHERE s.slot_id = ?`, [id]);
+  const [[slot]] = await db.query(`SELECT ${SLOT_FIELDS}, s.status FROM consultation_slots s WHERE s.slot_id = ?`, [id]);
   return slot;
 }
 
 // FR-03: the time must be valid, in the future, and not overlap the lecturer's other slots
 async function checkSlotTime(db, lecturerId, slot, ignoreId = 0) {
-  if (slot.endTime <= slot.startTime) throw httpError(400, 'The end time must be after the start time');
+  if (slot.end <= slot.start) throw httpError(400, 'The end time must be after the start time');
 
-  const [[{ isFuture }]] = await db.query('SELECT TIMESTAMP(?, ?) > NOW() AS isFuture', [slot.date, slot.startTime]);
+  const [[{ isFuture }]] = await db.query('SELECT TIMESTAMP(?, ?) > NOW() AS isFuture', [slot.date, slot.start]);
   if (!isFuture) throw httpError(400, 'Choose a time in the future');
 
   const [overlap] = await db.query(
@@ -60,7 +59,7 @@ async function checkSlotTime(db, lecturerId, slot, ignoreId = 0) {
      WHERE lecturer_id = ? AND slot_date = ? AND status <> 'cancelled' AND slot_id <> ?
        AND start_time < ? AND end_time > ?
      LIMIT 1`,
-    [lecturerId, slot.date, ignoreId, slot.endTime, slot.startTime]
+    [lecturerId, slot.date, ignoreId, slot.end, slot.start]
   );
   if (overlap.length) throw httpError(409, 'This overlaps another one of your slots');
 }
@@ -117,6 +116,7 @@ router.get('/lecturers', requireRole('student'), async (req, res, next) => {
        LEFT JOIN consultation_slots s
          ON s.lecturer_id = u.user_id AND s.status = 'open'
         AND TIMESTAMP(s.slot_date, s.start_time) > NOW()
+        AND NOT EXISTS (SELECT 1 FROM bookings b WHERE b.active_slot_id = s.slot_id)
        WHERE u.role = 'lecturer'
        GROUP BY u.user_id, u.full_name, lp.department, lp.office
        ORDER BY u.full_name`
@@ -133,10 +133,11 @@ router.get('/', requireRole('student'), async (req, res, next) => {
     if (!isId(req.query.lecturerId)) return res.status(400).json({ error: 'Choose a lecturer' });
 
     const [rows] = await pool.query(
-      `SELECT ${SLOT_FIELDS}
+      `SELECT ${SLOT_FIELDS}, s.status
        FROM consultation_slots s
        WHERE s.lecturer_id = ? AND s.status = 'open'
          AND TIMESTAMP(s.slot_date, s.start_time) > NOW()
+         AND NOT EXISTS (SELECT 1 FROM bookings b WHERE b.active_slot_id = s.slot_id)
        ORDER BY s.slot_date, s.start_time`,
       [Number(req.query.lecturerId)]
     );
@@ -149,10 +150,12 @@ router.get('/', requireRole('student'), async (req, res, next) => {
 /* ---------- Lecturer routes ---------- */
 
 // The lecturer's own upcoming slots, with the student and reason on booked ones
-router.get('/mine', requireRole('lecturer'), async (req, res, next) => {
+router.get(['/my', '/mine'], requireRole('lecturer'), async (req, res, next) => {
   try {
     const [rows] = await pool.query(
-      `SELECT ${SLOT_FIELDS}, st.full_name AS studentName, b.reason
+      `SELECT ${SLOT_FIELDS},
+              IF(b.booking_id IS NULL, s.status, 'booked') AS status,
+              st.full_name AS studentName, b.reason
        FROM consultation_slots s
        LEFT JOIN bookings b ON b.active_slot_id = s.slot_id
        LEFT JOIN users st ON st.user_id = b.student_id
@@ -166,7 +169,7 @@ router.get('/mine', requireRole('lecturer'), async (req, res, next) => {
   }
 });
 
-// Publish a slot. Body: { date, startTime, endTime, location }
+// Publish a slot. Body: { date, start, end, location }
 router.post('/', requireRole('lecturer'), slotRules, async (req, res, next) => {
   try {
     const slot = cleanSlot(req.body);
@@ -177,7 +180,7 @@ router.post('/', requireRole('lecturer'), slotRules, async (req, res, next) => {
       const [result] = await pool.query(
         `INSERT INTO consultation_slots (lecturer_id, slot_date, start_time, end_time, location)
          VALUES (?, ?, ?, ?, ?)`,
-        [req.user.id, slot.date, slot.startTime, slot.endTime, slot.location]
+        [req.user.id, slot.date, slot.start, slot.end, slot.location]
       );
       id = result.insertId;
     } catch (err) {
@@ -187,12 +190,12 @@ router.post('/', requireRole('lecturer'), slotRules, async (req, res, next) => {
       // because it has booking history), so bring that slot back
       const [[old]] = await pool.query(
         'SELECT slot_id FROM consultation_slots WHERE lecturer_id = ? AND slot_date = ? AND start_time = ?',
-        [req.user.id, slot.date, slot.startTime]
+        [req.user.id, slot.date, slot.start]
       );
       const [update] = await pool.query(
         `UPDATE consultation_slots SET status = 'open', end_time = ?, location = ?
          WHERE slot_id = ? AND status = 'cancelled'`,
-        [slot.endTime, slot.location, old.slot_id]
+        [slot.end, slot.location, old.slot_id]
       );
       if (!update.affectedRows) throw httpError(409, 'You already have a slot at that time');
       id = old.slot_id;
@@ -214,7 +217,7 @@ router.put('/:id', requireRole('lecturer'), slotRules, (req, res, next) =>
       await conn.query(
         `UPDATE consultation_slots SET slot_date = ?, start_time = ?, end_time = ?, location = ?
          WHERE slot_id = ?`,
-        [slot.date, slot.startTime, slot.endTime, slot.location, current.slot_id]
+        [slot.date, slot.start, slot.end, slot.location, current.slot_id]
       );
     } catch (err) {
       if (err.code === 'ER_DUP_ENTRY') throw httpError(409, 'You already have a slot at that time');
