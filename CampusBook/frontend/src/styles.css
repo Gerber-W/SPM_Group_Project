@@ -74,3 +74,25 @@
   .login-image { display: none; }
   .login-panel { align-items: flex-start; padding: 24px 20px 40px; }
 }
+
+/* Step 1 of the login page: choose student or lecturer */
+.role-choices { display: grid; gap: 12px; }
+
+.role-choice {
+  display: block;
+  width: 100%;
+  padding: 16px 18px;
+  text-align: left;
+  font: inherit;
+  color: var(--cb-text);
+  background: var(--cb-white);
+  border: 1px solid var(--cb-input);
+  border-radius: var(--cb-radius);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.role-choice:hover { border-color: var(--cb-red); background: var(--cb-red-light); }
+.role-choice strong { display: block; font-size: 1.05rem; }
+.role-choice span { color: var(--cb-muted); font-size: 14px; }
+
+.login-back { margin: 0 0 8px -14px; }
