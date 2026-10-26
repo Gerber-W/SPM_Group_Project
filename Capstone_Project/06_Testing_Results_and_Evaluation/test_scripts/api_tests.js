@@ -136,7 +136,7 @@ const day = n => ymd(new Date(Date.now() + n * 86400000));
   const bkR = await call('POST', '/api/bookings', S3.token, { slotId: slot3.insertId, reason: 'Reminder test' });
   const [[remBefore]] = await db.query("SELECT status, send_at FROM notifications WHERE booking_id=? AND type='reminder'", [bkR.json.id]);
   await db.query("UPDATE notifications SET send_at = NOW() - INTERVAL 1 MINUTE WHERE booking_id=? AND type='reminder'", [bkR.json.id]);
-  process.env.DB_HOST = '127.0.0.1'; process.env.DB_USER = 'root'; 
+  process.env.DB_HOST = '127.0.0.1'; process.env.DB_PASSWORD = 'test'; process.env.DB_USER = 'root'; process.env.JWT_SECRET = 'x';
   const origLog = console.log; let captured = [];
   console.log = (...x) => { captured.push(x.join(' ')); };
   const job = require('./CampusBook/backend/src/jobs/reminders');
@@ -224,7 +224,7 @@ const day = n => ymd(new Date(Date.now() + n * 86400000));
 
   const jwt = require('./CampusBook/backend/node_modules/jsonwebtoken');
   const forged = jwt.sign({ id: 3, name: 'x', email: 'x', role: 'lecturer' }, 'wrong-secret');
-  const expired = jwt.sign({ id: 3, name: 'x', email: 'x', role: 'student' }, process.env.JWT_SECRET, { expiresIn: -10 });
+  const expired = jwt.sign({ id: 3, name: 'x', email: 'x', role: 'student' }, 'test-secret-for-week4-tests-only', { expiresIn: -10 });
   a = await call('GET', '/api/bookings/mine', forged);
   b = await call('GET', '/api/bookings/mine', expired);
   c = await call('GET', '/api/bookings/mine', 'garbage');

@@ -1,0 +1,36 @@
+const { chromium } = require('/opt/npm-tools/node_modules/playwright');
+const APP = 'http://localhost:5173', API = 'http://127.0.0.1:4100'; const OUT = 'shots3'; require('fs').mkdirSync(OUT, { recursive: true });
+const res = {};
+(async () => {
+  const b = await chromium.launch();
+  const login = async (p, e) => { await p.goto(APP + '/login'); await p.fill('#email', e); await p.fill('#password', 'CampusBook123'); await p.click('form button[type=submit]'); await p.waitForTimeout(1500); };
+  const p = await (await b.newContext({ viewport: { width: 1366, height: 768 } })).newPage();
+  p.on('dialog', d => d.accept());
+  await login(p, 'willem.gerber@campusbook.test');
+  await p.goto(APP + '/book'); await p.waitForTimeout(800);
+  await p.locator('.bs-lecturer').first().click(); await p.waitForTimeout(800);
+  const times = await p.locator('.bs-time').allInnerTexts();
+  await p.locator('.bs-time').first().click(); await p.fill('#bs-reason', 'Testing change');
+  await p.route('**/api/bookings', r => r.request().method() === 'POST' ? r.fulfill({ status: 500, contentType: 'application/json', body: '{"error":"Something went wrong, please try again"}' }) : r.continue());
+  await p.click('button:has-text("Confirm booking")'); await p.waitForTimeout(800);
+  const reasonKept = await p.locator('#bs-reason').count() ? await p.inputValue('#bs-reason') : 'hidden';
+  await p.unroute('**/api/bookings');
+  await p.click('button:has-text("Confirm booking")'); await p.waitForTimeout(1200);
+  res.book = { times, reasonKeptAfter500: reasonKept, confirmed: await p.locator('text=You are booked').count() };
+  await p.goto(APP + '/my-bookings'); await p.waitForTimeout(800);
+  await p.click('button:has-text("Change time")'); await p.waitForTimeout(800);
+  const opts = await p.locator('select[aria-label="New time"] option').allInnerTexts();
+  await p.screenshot({ path: OUT + '/change_open.png', fullPage: true });
+  await p.selectOption('select[aria-label="New time"]', { index: 1 }); await p.click('button:has-text("Move booking")'); await p.waitForTimeout(1200);
+  res.change = { opts, notice: (await p.locator('.cb-alert').allInnerTexts()).join(' | '), rows: await p.locator('.mb-row').allInnerTexts() };
+  await p.screenshot({ path: OUT + '/change_done.png', fullPage: true });
+  await p.evaluate(() => localStorage.setItem('token', 'bad'));
+  await p.goto(APP + '/my-bookings'); await p.waitForTimeout(1500);
+  res.expired = { url: p.url() };
+  const codes = []; for (let i = 0; i < 12; i++) { const r = await fetch(API + '/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'oscar.x@campusbook.test', password: 'wrong' + i }) }); codes.push(r.status); }
+  const ok = await fetch(API + '/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'willem.gerber@campusbook.test', password: 'CampusBook123' }) });
+  res.rate = { codes: codes.join(','), otherUserStillLogsIn: ok.status };
+  console.log(JSON.stringify(res, null, 1));
+  require('fs').writeFileSync('extras_results.json', JSON.stringify(res, null, 1));
+  await b.close();
+})();

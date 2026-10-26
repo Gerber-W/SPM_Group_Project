@@ -1,0 +1,24 @@
+--- /tmp/LS.orig.jsx	2026-10-22 15:22:32.631215647 +0200
++++ CampusBook/frontend/src/pages/LecturerSlots.jsx	2026-10-22 15:22:32.675527760 +0200
+@@ -36,8 +36,8 @@
+ 
+   async function loadSlots() {
+     try {
+-      const { data } = await api.get('/api/slots/my');
+-      setSlots(data);
++      const { data } = await api.get('/api/slots/mine');
++      setSlots(data.map(slot => ({ ...slot, start: slot.startTime, end: slot.endTime })));
+     } catch (err) {
+       setError(errorMessage(err));
+     } finally {
+@@ -92,8 +92,8 @@
+     try {
+       await api.post('/api/slots', {
+         date,
+-        start,
+-        end,
++        startTime: start,
++        endTime: end,
+         location: location.trim()
+       });
+ 

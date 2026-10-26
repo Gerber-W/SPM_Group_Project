@@ -54,8 +54,9 @@ export default function BookSlot() {
 
   async function loadSlots(selected) {
     const { data } = await api.get('/api/slots', { params: { lecturerId: selected.id } });
-    setSlots(data);
-    return data;
+    const list = data.map(item => ({ ...item, start: item.startTime, end: item.endTime }));
+    setSlots(list);
+    return list;
   }
 
   function chooseLecturer(selected) {
@@ -88,10 +89,11 @@ export default function BookSlot() {
       const { data } = await api.post('/api/bookings', { slotId: slot.id, reason: reason.trim() });
       setBooking(data);
       setReason('');
+      setSlot(null);
     } catch (err) {
       setError(errorMessage(err));
+      if (err.response?.status === 409) setSlot(null);
     } finally {
-      setSlot(null);
       setSaving(false);
       loadSlots(lecturer).catch(() => {});
     }
@@ -112,7 +114,7 @@ export default function BookSlot() {
   }
 
   return (
-    <Page title="Book a consultation" subtitle="Choose a lecturer, pick a time that suits you and tell them what you need help with">
+    <Page title="Book a consultation" eyebrow="Book a slot" image="hero-woman" subtitle="Choose a lecturer, pick a time that suits you and tell them what you need help with">
       <Section>
         <Alert>{error}</Alert>
         <StepTitle number={1} done={Boolean(lecturer)}>Choose a lecturer</StepTitle>

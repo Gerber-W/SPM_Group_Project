@@ -33,11 +33,12 @@ export default function LecturerSlots() {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState(null);
 
   async function loadSlots() {
     try {
-      const { data } = await api.get('/api/slots/my');
-      setSlots(data);
+      const { data } = await api.get('/api/slots/mine');
+      setSlots(data.map(slot => ({ ...slot, start: slot.startTime, end: slot.endTime })));
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -50,10 +51,22 @@ export default function LecturerSlots() {
   }, []);
 
   function clearForm() {
+    setEditingId(null);
     setDate('');
     setStart('');
     setEnd('');
     setLocation('');
+  }
+
+  function startEdit(slot) {
+    setError('');
+    setSuccess('');
+    setEditingId(slot.id);
+    setDate(slot.date);
+    setStart(slot.start);
+    setEnd(slot.end);
+    setLocation(slot.location);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   async function publishSlot(event) {
@@ -77,6 +90,7 @@ export default function LecturerSlots() {
     }
 
     const overlaps = slots.some(slot =>
+      slot.id !== editingId &&
       slot.date === date &&
       start < slot.end &&
       end > slot.start
@@ -90,14 +104,20 @@ export default function LecturerSlots() {
     setSaving(true);
 
     try {
-      await api.post('/api/slots', {
+      const body = {
         date,
-        start,
-        end,
+        startTime: start,
+        endTime: end,
         location: location.trim()
-      });
+      };
 
-      setSuccess('Consultation slot published successfully.');
+      if (editingId) {
+        await api.put(`/api/slots/${editingId}`, body);
+        setSuccess('Consultation slot updated.');
+      } else {
+        await api.post('/api/slots', body);
+        setSuccess('Consultation slot published successfully.');
+      }
       clearForm();
       await loadSlots();
     } catch (err) {
@@ -130,7 +150,7 @@ export default function LecturerSlots() {
       subtitle="Publish your available times and manage student consultations"
     >
       <Section>
-        <StepTitle number={1}>Publish a slot</StepTitle>
+        <StepTitle number={1}>{editingId ? 'Edit a slot' : 'Publish a slot'}</StepTitle>
 
         <Alert>{error}</Alert>
         <Alert type="success">{success}</Alert>
@@ -181,14 +201,14 @@ export default function LecturerSlots() {
 
           <div className="cb-actions ls-actions">
             <Button type="submit" disabled={saving}>
-              {saving ? 'Publishing...' : 'Publish slot'}
+              {saving ? 'Saving...' : editingId ? 'Save changes' : 'Publish slot'}
             </Button>
 
             <Button
               variant="outline"
               onClick={clearForm}
             >
-              Clear
+              {editingId ? 'Cancel edit' : 'Clear'}
             </Button>
           </div>
         </form>
@@ -248,13 +268,22 @@ export default function LecturerSlots() {
                       </td>
                       <td>
                         {!booked ? (
-                          <Button
-                            variant="outline"
-                            size="small"
-                            onClick={() => removeSlot(slot.id)}
-                          >
-                            Remove
-                          </Button>
+                          <>
+                            <Button
+                              variant="outline"
+                              size="small"
+                              onClick={() => startEdit(slot)}
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="small"
+                              onClick={() => removeSlot(slot.id)}
+                            >
+                              Remove
+                            </Button>
+                          </>
                         ) : (
                           <span className="cb-muted">
                             Booked

@@ -4,17 +4,33 @@ import '../styles/theme.css';
 
 const classes = (...names) => names.filter(Boolean).join(' ');
 
-export function Page({ title, subtitle, actions, children }) {
+function Headline({ text }) {
+  const words = text.split(' ');
+  const last = words.pop();
   return (
-    <section className="cb-page">
-      <header className="cb-page-header">
-        <div>
-          <h1>{title}</h1>
-          {subtitle && <p className="cb-muted">{subtitle}</p>}
+    <>
+      {words.length > 0 && <span className="cb-hero-light">{words.join(' ')} </span>}
+      <span className="cb-hero-strong">{last}</span>
+    </>
+  );
+}
+
+export function Page({ title, subtitle, eyebrow, actions, image, children }) {
+  return (
+    <section className="cb-page-wrap">
+      <header className="cb-hero">
+        <div className="cb-hero-inner">
+          <img className="cb-hero-ribbon" src="/img/ribbon.webp" alt="" />
+          <div className="cb-hero-text">
+            <h1><Headline text={title} /></h1>
+            {subtitle && <p>{subtitle}</p>}
+            {actions && <div className="cb-actions">{actions}</div>}
+          </div>
+          {eyebrow && <span className="cb-tab">{eyebrow}</span>}
+          {image && <img className="cb-hero-person" src={`/img/${image}.webp`} alt="" />}
         </div>
-        {actions && <div className="cb-actions">{actions}</div>}
       </header>
-      {children}
+      <div className="cb-page">{children}</div>
     </section>
   );
 }

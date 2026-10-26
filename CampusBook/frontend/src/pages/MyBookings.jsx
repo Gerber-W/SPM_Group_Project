@@ -33,6 +33,10 @@ export default function MyBookings() {
   const [notice, setNotice] = useState('');
   const [confirmId, setConfirmId] = useState(null);
   const [cancellingId, setCancellingId] = useState(null);
+  const [changeId, setChangeId] = useState(null);
+  const [options, setOptions] = useState([]);
+  const [newSlotId, setNewSlotId] = useState('');
+  const [moving, setMoving] = useState(false);
 
   async function load() {
     try {
@@ -65,12 +69,46 @@ export default function MyBookings() {
     }
   }
 
+  async function startChange(booking) {
+    setError('');
+    setNotice('');
+    setConfirmId(null);
+    setChangeId(booking.id);
+    setNewSlotId('');
+    setOptions([]);
+    try {
+      const { data } = await api.get('/api/slots', { params: { lecturerId: booking.lecturerId } });
+      setOptions(data.filter(item => item.id !== booking.slotId));
+    } catch (err) {
+      setError(errorMessage(err));
+      setChangeId(null);
+    }
+  }
+
+  async function move(id) {
+    setMoving(true);
+    setError('');
+    setNotice('');
+    try {
+      await api.patch(`/api/bookings/${id}/change`, { newSlotId: Number(newSlotId) });
+      setNotice('Your booking has moved and the lecturer has been told');
+      setChangeId(null);
+      await load();
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setMoving(false);
+    }
+  }
+
   const upcoming = bookings.filter(isUpcoming).reverse();
   const history = bookings.filter(booking => !isUpcoming(booking));
 
   return (
     <Page
       title="My bookings"
+      eyebrow="Your schedule"
+      image="hero-woman"
       subtitle="Your upcoming consultations and your booking history"
       actions={<ButtonLink to="/book">Book a consultation</ButtonLink>}
     >
@@ -86,7 +124,26 @@ export default function MyBookings() {
           <ul className="mb-list">
             {upcoming.map(booking => (
               <BookingRow key={booking.id} booking={booking}>
-                {confirmId === booking.id ? (
+                {changeId === booking.id ? (
+                  <>
+                    <select
+                      aria-label="New time"
+                      value={newSlotId}
+                      onChange={event => setNewSlotId(event.target.value)}
+                    >
+                      <option value="">{options.length ? 'Choose a new time' : 'No other open times'}</option>
+                      {options.map(item => (
+                        <option key={item.id} value={item.id}>
+                          {formatDay(item.date)} {item.startTime} to {item.endTime}
+                        </option>
+                      ))}
+                    </select>
+                    <Button variant="ghost" size="small" onClick={() => setChangeId(null)}>Back</Button>
+                    <Button size="small" disabled={!newSlotId || moving} onClick={() => move(booking.id)}>
+                      {moving ? 'Moving' : 'Move booking'}
+                    </Button>
+                  </>
+                ) : confirmId === booking.id ? (
                   <>
                     <Button variant="ghost" size="small" onClick={() => setConfirmId(null)}>Keep it</Button>
                     <Button size="small" disabled={cancellingId === booking.id} onClick={() => cancel(booking.id)}>
@@ -94,7 +151,10 @@ export default function MyBookings() {
                     </Button>
                   </>
                 ) : (
-                  <Button variant="outline" size="small" onClick={() => setConfirmId(booking.id)}>Cancel booking</Button>
+                  <>
+                    <Button variant="outline" size="small" onClick={() => startChange(booking)}>Change time</Button>
+                    <Button variant="outline" size="small" onClick={() => setConfirmId(booking.id)}>Cancel booking</Button>
+                  </>
                 )}
               </BookingRow>
             ))}

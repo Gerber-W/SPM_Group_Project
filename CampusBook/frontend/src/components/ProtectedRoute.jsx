@@ -6,6 +6,8 @@ export default function ProtectedRoute({ role, children }) {
   const userRole = localStorage.getItem("role");
 
   if (!token) return <Navigate to="/login" replace />;
-  if (role && role !== userRole) return <Navigate to="/login" replace />;
+  if (role && role !== userRole) {
+    return <Navigate to={userRole === "lecturer" ? "/lecturer/slots" : "/book"} replace />;
+  }
   return children;
-}
+}
