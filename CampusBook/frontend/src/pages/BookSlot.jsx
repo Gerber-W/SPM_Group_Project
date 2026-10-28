@@ -54,9 +54,8 @@ export default function BookSlot() {
 
   async function loadSlots(selected) {
     const { data } = await api.get('/api/slots', { params: { lecturerId: selected.id } });
-    const list = data.map(item => ({ ...item, start: item.startTime, end: item.endTime }));
-    setSlots(list);
-    return list;
+    setSlots(data);
+    return data;
   }
 
   function chooseLecturer(selected) {

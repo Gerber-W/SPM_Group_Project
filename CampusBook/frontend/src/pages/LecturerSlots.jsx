@@ -38,7 +38,7 @@ export default function LecturerSlots() {
   async function loadSlots() {
     try {
       const { data } = await api.get('/api/slots/mine');
-      setSlots(data.map(slot => ({ ...slot, start: slot.startTime, end: slot.endTime })));
+      setSlots(data);
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -106,8 +106,8 @@ export default function LecturerSlots() {
     try {
       const body = {
         date,
-        startTime: start,
-        endTime: end,
+        start,
+        end,
         location: location.trim()
       };
 

@@ -2,22 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api";
 
-const ROLES = {
-  student: {
-    title: "I am a student",
-    blurb: "Book and manage your consultations",
-    label: "a student",
-  },
-  lecturer: {
-    title: "I am a lecturer",
-    blurb: "Publish your consultation times and see who is coming",
-    label: "a lecturer",
-  },
-};
-
 export default function Login() {
   const navigate = useNavigate();
-  const [role, setRole] = useState(null); // null = step 1, "student" or "lecturer" = step 2
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(() => {
@@ -26,16 +12,6 @@ export default function Login() {
     return notice;
   });
   const [loading, setLoading] = useState(false);
-
-  function chooseRole(chosen) {
-    setError("");
-    setRole(chosen);
-  }
-
-  function changeRole() {
-    setError("");
-    setRole(null);
-  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -49,29 +25,22 @@ export default function Login() {
 
     setLoading(true);
     try {
-      // TODO: confirm this route and the response shape with the back-end (routes/auth.js)
       const res = await api.post("/api/auth/login", {
         email: email.trim(),
         password,
       });
       const token = res.data.token;
-      const actualRole = res.data.role || res.data.user?.role;
+      const role = res.data.role || res.data.user?.role;
 
-      if (!token || !actualRole) {
+      if (!token || !role) {
         setError("Login worked but the reply had no token or role. Check the back-end response.");
         return;
       }
 
-      // The details are right but the account is the other kind: do not log in
-      if (actualRole !== role) {
-        setError(`This is ${ROLES[actualRole]?.label || "a different"} account. Choose "${ROLES[actualRole]?.title || "the other role"}" to log in.`);
-        return;
-      }
-
       localStorage.setItem("token", token);
-      localStorage.setItem("role", actualRole);
-            localStorage.setItem("user", JSON.stringify(res.data.user || { role: actualRole }));
-      navigate(actualRole === "lecturer" ? "/lecturer/slots" : "/book", { replace: true });
+      localStorage.setItem("role", role);
+      localStorage.setItem("user", JSON.stringify(res.data.user || { role }));
+      navigate(role === "lecturer" ? "/lecturer/slots" : "/book", { replace: true });
     } catch (err) {
       if (!err.response) {
         setError("We could not reach the server. Check your connection and try again.");
@@ -133,39 +102,9 @@ export default function Login() {
       </section>
 
       <section className="login-panel">
-        {role === null ? (
-          /* Step 1: choose student or lecturer */
-          <div className="login-form">
-            <h2>Log in</h2>
-            <p className="cb-muted login-hint">Choose how you use CampusBook</p>
-
-            <div className="role-choices">
-              {Object.entries(ROLES).map(([key, r]) => (
-                <button
-                  key={key}
-                  type="button"
-                  className="role-choice"
-                  onClick={() => chooseRole(key)}
-                >
-                  <strong>{r.title}</strong>
-                  <span>{r.blurb}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : (
-          /* Step 2: email and password */
-          <form className="login-form" onSubmit={handleSubmit} noValidate>
-            <button
-              type="button"
-              className="cb-btn cb-btn-ghost cb-btn-small login-back"
-              onClick={changeRole}
-            >
-              &larr; Change role
-            </button>
-
-            <h2>Log in as {ROLES[role].label}</h2>
-            <p className="cb-muted login-hint">Use your CTU email address</p>
+        <form className="login-form" onSubmit={handleSubmit} noValidate>
+          <h2>Log in</h2>
+          <p className="cb-muted login-hint">Use your CTU email address</p>
 
           <div className="cb-field">
             <label htmlFor="email">Email</label>
@@ -179,36 +118,31 @@ export default function Login() {
             />
           </div>
 
-            <div className="cb-field">
-              <label htmlFor="password">Password</label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
-              />
-            </div>
+          <div className="cb-field">
+            <label htmlFor="password">Password</label>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+            />
+          </div>
 
-            {error && (
-              <p className="cb-alert cb-alert-error" role="alert">
-                {error}
-              </p>
-            )}
+          {error && (
+            <p className="cb-alert cb-alert-error" role="alert">
+              {error}
+            </p>
+          )}
 
-            <button
-              type="submit"
-              className="cb-btn cb-btn-primary cb-btn-block"
-              disabled={loading}
-            >
-              {loading ? "Logging in..." : "Log in"}
-            </button>
+          <button type="submit" className="cb-btn cb-btn-primary cb-btn-block" disabled={loading}>
+            {loading ? "Logging in..." : "Log in"}
+          </button>
 
-            <a href="#" className="login-forgot" onClick={(e) => e.preventDefault()}>
-              Forgot password
-            </a>
-          </form>
-        )}
+          <a href="#" className="login-forgot" onClick={(e) => e.preventDefault()}>
+            Forgot password
+          </a>
+        </form>
       </section>
     </main>
   );

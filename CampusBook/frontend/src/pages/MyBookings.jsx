@@ -134,7 +134,7 @@ export default function MyBookings() {
                       <option value="">{options.length ? 'Choose a new time' : 'No other open times'}</option>
                       {options.map(item => (
                         <option key={item.id} value={item.id}>
-                          {formatDay(item.date)} {item.startTime} to {item.endTime}
+                          {formatDay(item.date)} {item.start} to {item.end}
                         </option>
                       ))}
                     </select>
